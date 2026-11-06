@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>D-Max Live</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#0b0f14">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#0b0f14;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
@@ -86,11 +89,12 @@ dialog select,dialog input{display:block;width:100%;margin-top:4px;padding:8px;b
     <button id="bRec" title="Record readings to a CSV file">⏺ Record</button>
     <button id="bFault">⚠ Faults</button>
     <button id="bAdd">+ Add tile</button>
+    <button id="bInstall" class="p" hidden>⬇ Install app</button>
   </div>
 </header>
 <div id="help">
   <b>Getting started:</b> 1) Turn the ignition ON (engine running or not). 2) Make sure the car's head unit is <b>not</b> connected to the adapter — it only allows one connection.
-  3) Pair the adapter once in <b>Windows Settings → Bluetooth &amp; devices</b> (PIN is usually <b>1234</b> or <b>0000</b>).
+  3) <b>BLE adapter</b> (like yours): no pairing needed — just tap <b>Connect BLE</b>. <b>Classic adapter</b>: pair it once in Windows/Android Bluetooth settings (PIN usually <b>1234</b> or <b>0000</b>).
   4) Click <b>Connect</b> and pick the adapter (or "Standard Serial over Bluetooth link (COMx)"). If nothing is listed, try <b>Connect BLE</b>. Click <b>Demo</b> to try it without the car.
 </div>
 <main id="grid"></main>
@@ -697,6 +701,12 @@ async function keepAwake() {
   try { S.wake = await navigator.wakeLock.request('screen'); S.wake.addEventListener('release', () => { S.wake = null; }); } catch (_) {}
 }
 document.addEventListener('visibilitychange', () => { if (S.connected && document.visibilityState === 'visible' && !S.wake) keepAwake(); });
+/* ---------- installable app (Android / desktop Chrome) ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(e => log('Offline support unavailable: ' + e.message));
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; $('#bInstall').hidden = false; });
+window.addEventListener('appinstalled', () => { installPrompt = null; $('#bInstall').hidden = true; });
+$('#bInstall').onclick = async () => { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; $('#bInstall').hidden = true; };
 build(); setButtons();
 </script>
 </body>
